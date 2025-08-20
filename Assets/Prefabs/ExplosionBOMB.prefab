@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 6482104726167572225}
   - component: {fileID: 1271543247120210737}
   - component: {fileID: 6367583845194473096}
+  - component: {fileID: 3456226601367948935}
+  - component: {fileID: -4428215130023990143}
   m_Layer: 0
   m_Name: ExplosionBOMB
   m_TagString: Untagged
@@ -4830,3 +4832,36 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &3456226601367948935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 294620058491835521}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16b64fca419fcaa43a662653a82b65ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!65 &-4428215130023990143
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 294620058491835521}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}

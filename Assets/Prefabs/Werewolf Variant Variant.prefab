@@ -68,6 +68,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Werewolf Variant Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 7452245790221474935, guid: 4c24e010c4ac2634690cd6ed473b533d,
+        type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
