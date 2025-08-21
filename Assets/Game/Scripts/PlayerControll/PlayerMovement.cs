@@ -1,10 +1,14 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
+using Photon.Pun;
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(AnimationMovement))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Component References")]
     private AnimationMovement animationMovement;
     private Rigidbody rb;
+    private Transform cameraTransform;
 
     [Header("Movement Stats")]
     public float moveSpeed = 5f;
@@ -16,11 +20,15 @@ public class PlayerMovement : MonoBehaviour
     private bool isSprinting = false;
     private bool isInteracting = false;
 
+    PhotonView photonView;
     void Awake()
     {
+        photonView = GetComponent<PhotonView>();
         rb = GetComponent<Rigidbody>();
         animationMovement = GetComponent<AnimationMovement>();
         playerControls = new PlayerControls();
+
+        cameraTransform = Camera.main.transform;
     }
 
     void OnEnable()
@@ -30,9 +38,7 @@ public class PlayerMovement : MonoBehaviour
         playerControls.PlayerMovement.Walk.canceled += OnWalkCanceled;
         playerControls.PlayerMovement.Sprint.performed += OnSprintPerformed;
         playerControls.PlayerMovement.Sprint.canceled += OnSprintCanceled;
-
         playerControls.PlayerMovement.Bomb.performed += OnBombPerformed;
-        //playerControls.PlayerMovement.Bomb.canceled += OnBombCanceled;
     }
 
     void OnDisable()
@@ -42,8 +48,6 @@ public class PlayerMovement : MonoBehaviour
         playerControls.PlayerMovement.Sprint.performed -= OnSprintPerformed;
         playerControls.PlayerMovement.Sprint.canceled -= OnSprintCanceled;
         playerControls.PlayerMovement.Bomb.performed -= OnBombPerformed;
-        //playerControls.PlayerMovement.Bomb.canceled -= OnBombCanceled;
-
         playerControls.PlayerMovement.Disable();
     }
 
@@ -76,29 +80,43 @@ public class PlayerMovement : MonoBehaviour
             animationMovement.PlayTarget("Bomb", isInteracting);
         }
     }
-    //private void OnBombCanceled(InputAction.CallbackContext context)
-    //{
-    //        isInteracting = false;
-    //        animationMovement.PlayTarget("PlayerMovement", isInteracting);
-    //}
     #endregion
 
     void Update()
     {
+        if (!photonView.IsMine) return;
         if (isInteracting) return;
-
         animationMovement.ChangeAnimatorValues(moveInput.x, moveInput.y, isSprinting);
     }
 
     void FixedUpdate()
     {
+        if (!photonView.IsMine) return;
         if (isInteracting) return;
 
-        Vector3 moveDirection = new Vector3(moveInput.x, 0f, moveInput.y).normalized;
-        HandleMovement(moveDirection);
-        HandleRotation(moveDirection);
-    }
+        Vector3 cameraForward = cameraTransform.forward;
+        Vector3 cameraRight = cameraTransform.right;
+        cameraForward.y = 0;
+        cameraRight.y = 0;
+        cameraForward.Normalize();
+        cameraRight.Normalize();
+        Vector3 moveDirection = (cameraForward * moveInput.y + cameraRight * moveInput.x).normalized;
 
+        HandleMovement(moveDirection);
+
+        if (moveInput.y >= 0)
+        {
+            HandleRotation(moveDirection);
+        }
+        else
+        {
+            Debug.Log("Condition is FALSE - Skipping HandleRotation");
+        }
+    }
+    void LateUpdate()
+    {
+        if (!photonView.IsMine) return;
+    }
     private void HandleMovement(Vector3 moveDirection)
     {
         float currentSpeed = isSprinting ? moveSpeed * sprintSpeedMultiplier : moveSpeed;
@@ -117,9 +135,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void OnInteractionEnd()
     {
-        Debug.Log("Interaction ended, resetting state.");
         isInteracting = false;
-        // SỬA LỖI: Dùng tên state "PlayerMovement" thay vì "Empty" để khớp với Animator của bạn
         animationMovement.PlayTarget("PlayerMovement", isInteracting);
     }
 }
