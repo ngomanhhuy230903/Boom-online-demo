@@ -11,7 +11,12 @@ PrefabInstance:
     - target: {fileID: 2852228802486165956, guid: 4c24e010c4ac2634690cd6ed473b533d,
         type: 3}
       propertyPath: m_UseGravity
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2852228802486165956, guid: 4c24e010c4ac2634690cd6ed473b533d,
+        type: 3}
+      propertyPath: m_Constraints
+      value: 80
       objectReference: {fileID: 0}
     - target: {fileID: 7452245790221303895, guid: 4c24e010c4ac2634690cd6ed473b533d,
         type: 3}
