@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using Photon.Pun;
+
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(AnimationMovement))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Component References")]
+    public GameObject playerCamera;
     private AnimationMovement animationMovement;
     private Rigidbody rb;
     private Transform cameraTransform;
@@ -21,6 +23,7 @@ public class PlayerMovement : MonoBehaviour
     private bool isInteracting = false;
 
     PhotonView photonView;
+
     void Awake()
     {
         photonView = GetComponent<PhotonView>();
@@ -28,11 +31,28 @@ public class PlayerMovement : MonoBehaviour
         animationMovement = GetComponent<AnimationMovement>();
         playerControls = new PlayerControls();
 
-        cameraTransform = Camera.main.transform;
+        if (!photonView.IsMine)
+        {
+            if (playerCamera != null)
+            {
+                playerCamera.GetComponent<Camera>().enabled = false;
+                playerCamera.GetComponent<AudioListener>().enabled = false;
+            }
+            this.enabled = false;
+        }
     }
 
-    void OnEnable()
+    void Start()
     {
+        if (playerCamera != null)
+        {
+            cameraTransform = playerCamera.transform;
+        }
+        else
+        {
+            Debug.LogError("Player Camera chưa được gán trong Inspector!", this);
+        }
+
         playerControls.PlayerMovement.Enable();
         playerControls.PlayerMovement.Walk.performed += OnWalkPerformed;
         playerControls.PlayerMovement.Walk.canceled += OnWalkCanceled;
@@ -41,17 +61,19 @@ public class PlayerMovement : MonoBehaviour
         playerControls.PlayerMovement.Bomb.performed += OnBombPerformed;
     }
 
-    void OnDisable()
+    private void OnDestroy()
     {
-        playerControls.PlayerMovement.Walk.performed -= OnWalkPerformed;
-        playerControls.PlayerMovement.Walk.canceled -= OnWalkCanceled;
-        playerControls.PlayerMovement.Sprint.performed -= OnSprintPerformed;
-        playerControls.PlayerMovement.Sprint.canceled -= OnSprintCanceled;
-        playerControls.PlayerMovement.Bomb.performed -= OnBombPerformed;
-        playerControls.PlayerMovement.Disable();
+        if (photonView.IsMine && playerControls != null)
+        {
+            playerControls.PlayerMovement.Walk.performed -= OnWalkPerformed;
+            playerControls.PlayerMovement.Walk.canceled -= OnWalkCanceled;
+            playerControls.PlayerMovement.Sprint.performed -= OnSprintPerformed;
+            playerControls.PlayerMovement.Sprint.canceled -= OnSprintCanceled;
+            playerControls.PlayerMovement.Bomb.performed -= OnBombPerformed;
+            playerControls.PlayerMovement.Disable();
+        }
     }
 
-    #region Input Event Handlers
     private void OnWalkPerformed(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
@@ -80,19 +102,17 @@ public class PlayerMovement : MonoBehaviour
             animationMovement.PlayTarget("Bomb", isInteracting);
         }
     }
-    #endregion
 
     void Update()
     {
-        if (!photonView.IsMine) return;
         if (isInteracting) return;
         animationMovement.ChangeAnimatorValues(moveInput.x, moveInput.y, isSprinting);
     }
 
     void FixedUpdate()
     {
-        if (!photonView.IsMine) return;
         if (isInteracting) return;
+        if (cameraTransform == null) return;
 
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
@@ -108,15 +128,8 @@ public class PlayerMovement : MonoBehaviour
         {
             HandleRotation(moveDirection);
         }
-        else
-        {
-            Debug.Log("Condition is FALSE - Skipping HandleRotation");
-        }
     }
-    void LateUpdate()
-    {
-        if (!photonView.IsMine) return;
-    }
+
     private void HandleMovement(Vector3 moveDirection)
     {
         float currentSpeed = isSprinting ? moveSpeed * sprintSpeedMultiplier : moveSpeed;
