@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
+using UnityEngine.UI;
 
 public class GameManager_Offline : MonoBehaviourPunCallbacks
 {
@@ -12,17 +13,12 @@ public class GameManager_Offline : MonoBehaviourPunCallbacks
     public float gameTime = 0f;
     public int maxGameTime = 300; // 5 phút
 
-    [Header("Player Health & Win/Lose")]
-    public int playerMaxHealth = 3;
-    public int currentPlayerHealth = 3;
-    public bool isPlayerDead = false;
-    private float lastDamageTime = -10f; // Thời gian cuối cùng bị trừ máu
-    public float damageCooldown = 1f; // Khoảng thời gian chờ giữa các lần trừ máu (1 giây)
-
     [Header("Player Management")]
     public GameObject playerPrefab;
     public Transform[] spawnPoints;
     public GameObject currentPlayer;
+    public Text healthText;
+    private Health currentPlayerHealth;
 
     [Header("Bomb Management")]
     private PlayerBombSpawner playerBombSpawner;
@@ -57,32 +53,38 @@ public class GameManager_Offline : MonoBehaviourPunCallbacks
         InitializeGame();
     }
 
-void Update()
-{
-    if (isGameActive && !isGamePaused)
+    void Update()
     {
-        UpdateGameTime();   // chỉ gọi 1 lần
-        HandleInput();
+        if (isGameActive && !isGamePaused)
+        {
+            UpdateGameTime();
+            HandleInput();
+            CheckWinCondition();
 
-        // Kiểm tra điều kiện thắng
-        CheckWinCondition();
+            // Update máu của player local
+            if (currentPlayerHealth != null)
+            {
+                UpdateHealthUI(currentPlayerHealth.currentHealth, currentPlayerHealth.maxHealth);
+            }
+        }
     }
-}
+
+    private void UpdateHealthUI(int current, int max)
+    {
+        if (healthText != null)
+        {
+            healthText.text = "HP: " + current + "/" + max;
+        }
+    }
 
     private void InitializeGame()
     {
         Debug.Log("[GameManager] Khởi tạo game offline...");
 
-        // Tắt network mode nếu cần
         if (!enableNetworkMode)
-        {
             PhotonNetwork.OfflineMode = true;
-        }
 
-        // Spawn player
         SpawnPlayer();
-
-        // Bắt đầu game
         StartGame();
     }
 
@@ -100,10 +102,10 @@ void Update()
             currentPlayer = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
             Debug.Log("[GameManager] Đã spawn player tại: " + spawnPoint.position);
 
-            // Setup camera sau khi spawn player
-            SetupCamera();
+            // Lấy Health của nhân vật mình điều khiển
+            currentPlayerHealth = currentPlayer.GetComponent<Health>();
 
-            // Setup PlayerBombSpawner
+            SetupCamera();
             SetupPlayerBombSpawner();
         }
         else
@@ -127,26 +129,24 @@ void Update()
     private void StartGame()
     {
         isGameActive = true;
-        gameTime = maxGameTime; // Reset thời gian khi bắt đầu
-        currentPlayerHealth = playerMaxHealth;
-        isPlayerDead = false;
-        lastDamageTime = -10f; // Reset thời gian cuối cùng bị trừ máu
-        Debug.Log("[GameManager] Game đã bắt đầu! Máu: " + currentPlayerHealth);
+        gameTime = maxGameTime;
 
         if (gameUI != null)
             gameUI.SetActive(true);
+
+        Debug.Log("[GameManager] Game đã bắt đầu!");
     }
 
-private void UpdateGameTime()
-{
-    gameTime -= Time.deltaTime;
-
-    if (gameTime <= 0)
+    private void UpdateGameTime()
     {
-        gameTime = 0;
-        GameOver("Hết thời gian!");
+        gameTime -= Time.deltaTime;
+
+        if (gameTime <= 0)
+        {
+            gameTime = 0;
+            GameOver("Hết thời gian!");
+        }
     }
-}
 
     private void HandleInput()
     {
@@ -164,7 +164,7 @@ private void UpdateGameTime()
         if (pauseUI != null)
             pauseUI.SetActive(isGamePaused);
 
-        Debug.Log("[GameManager] Game " + (isGamePaused ? "đã pause" : "đã resume"));
+        Debug.Log("[GameManager] Game " + (isGamePaused ? "pause" : "resume"));
     }
 
     public void GameOver(string reason = "Game Over")
@@ -207,17 +207,11 @@ private void UpdateGameTime()
         if (topDownCamera == null)
         {
             topDownCamera = Camera.main.GetComponent<TopDownFollowCamera>();
-            Debug.Log("[GameManager] Tìm thấy TopDownFollowCamera: " + (topDownCamera != null));
         }
 
         if (topDownCamera != null && currentPlayer != null)
         {
             topDownCamera.target = currentPlayer.transform;
-            Debug.Log("[GameManager] TopDownFollowCamera đã được setup để follow player: " + currentPlayer.name);
-        }
-        else
-        {
-            Debug.LogWarning($"[GameManager] Không thể setup camera - topDownCamera: {topDownCamera != null}, currentPlayer: {currentPlayer != null}");
         }
     }
 
@@ -230,43 +224,42 @@ private void UpdateGameTime()
             if (playerBombSpawner != null)
             {
                 playerBombSpawner.enabled = true;
-                Debug.Log("[GameManager] PlayerBombSpawner đã được setup và sẵn sàng");
+            }
+        }
+    }
+
+    public void CheckWinCondition()
+    {
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+
+        int aliveCount = 0;
+        GameObject lastAlive = null;
+
+        foreach (GameObject player in players)
+        {
+            Health h = player.GetComponent<Health>();
+            if (h != null && h.IsAlive())
+            {
+                aliveCount++;
+                lastAlive = player;
+            }
+        }
+
+        if (aliveCount == 1)
+        {
+            if (lastAlive == currentPlayer)
+            {
+                Win(); // bạn là người sống sót cuối
             }
             else
             {
-                Debug.LogWarning("[GameManager] Player không có PlayerBombSpawner component");
+                GameOver("Bạn đã thua!"); // người khác sống sót
             }
         }
-    }
-
-    public void TakeDamage(int damage)
-    {
-        if (isPlayerDead || !isGameActive) return;
-
-        // Kiểm tra thời gian cooldown để tránh trừ máu nhiều lần ngay lập tức
-        if (Time.time - lastDamageTime >= damageCooldown)
+        else if (aliveCount == 0)
         {
-            currentPlayerHealth -= damage;
-            lastDamageTime = Time.time; // Cập nhật thời gian cuối cùng bị trừ máu
-            Debug.Log("[GameManager] Player bị trúng bom! Máu còn: " + currentPlayerHealth);
-
-            if (currentPlayerHealth <= 0)
-            {
-                currentPlayerHealth = 0;
-                isPlayerDead = true;
-                Debug.Log("[GameManager] Máu về 0! Dừng game.");
-                GameOver("Bạn đã thua (hết máu)");
-                isGameActive = false; // Dừng game khi máu về 0
-                Time.timeScale = 0f; // Tạm dừng thời gian
-            }
+            GameOver("Không còn ai sống sót!");
         }
     }
 
-    private void CheckWinCondition()
-    {
-        if (!isPlayerDead)
-        {
-            // Có thể thêm điều kiện: nếu clear hết enemy thì Win();
-        }
-    }
 }

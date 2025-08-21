@@ -4,11 +4,15 @@ public class Bomb : MonoBehaviour
 {
     public GameObject explosionPrefab; 
     public float countdownExplosion = 3f;      
-    public float explosionOffsetY = 1f;   // nâng cao hiệu ứng
-    public int explosionRange = 5;        // số bước nổ theo 4 hướng
+    public float explosionOffsetY = 1f;   
+    public int explosionRange = 5;
+
+    private static int globalExplosionGroupCounter = 0;
+    private int myExplosionGroupId;
 
     void Start()
     {
+        myExplosionGroupId = ++globalExplosionGroupCounter;
         Invoke("Explode", countdownExplosion);  
     }
 
@@ -16,26 +20,32 @@ public class Bomb : MonoBehaviour
     {
         if (explosionPrefab != null)
         {
-            // Tâm nổ
             Vector3 center = transform.position + Vector3.up * explosionOffsetY;
-            Instantiate(explosionPrefab, center, Quaternion.identity);
+            SpawnExplosion(center);
 
-            // Nổ 4 hướng chữ thập
-            SpawnExplosion(Vector3.forward);  // lên
-            SpawnExplosion(Vector3.back);     // xuống
-            SpawnExplosion(Vector3.left);     // trái
-            SpawnExplosion(Vector3.right);    // phải
+            SpawnExplosion(transform.position + Vector3.up * explosionOffsetY, Vector3.forward);
+            SpawnExplosion(transform.position + Vector3.up * explosionOffsetY, Vector3.back);
+            SpawnExplosion(transform.position + Vector3.up * explosionOffsetY, Vector3.left);
+            SpawnExplosion(transform.position + Vector3.up * explosionOffsetY, Vector3.right);
         } 
 
         Destroy(gameObject);
     }
 
-    void SpawnExplosion(Vector3 direction)
+    void SpawnExplosion(Vector3 basePos, Vector3? direction = null)
     {
-        for (int i = 1; i <= explosionRange; i++) // từ 1 đến 5 đơn vị
+        if (direction == null)
         {
-            Vector3 spawnPos = transform.position + Vector3.up * explosionOffsetY + direction * i;
-            Instantiate(explosionPrefab, spawnPos, Quaternion.identity);
+            GameObject obj = Instantiate(explosionPrefab, basePos, Quaternion.identity);
+            obj.GetComponent<Explosion>().explosionGroupId = myExplosionGroupId;
+            return;
+        }
+
+        for (int i = 1; i <= explosionRange; i++)
+        {
+            Vector3 spawnPos = basePos + direction.Value * i;
+            GameObject obj = Instantiate(explosionPrefab, spawnPos, Quaternion.identity);
+            obj.GetComponent<Explosion>().explosionGroupId = myExplosionGroupId;
         }
     }
 }
