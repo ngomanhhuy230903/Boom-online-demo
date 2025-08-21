@@ -8,8 +8,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     public static NetworkManager Instance;
 
     // --- Biến để TỰ ĐỘNG TEST ---
-    // Đặt tên phòng bạn muốn test ở đây
     private string testRoomName = "PhongTest123";
+    private string playerName; // Thêm biến để lưu tên người chơi
 
     private void Awake()
     {
@@ -30,6 +30,31 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         PhotonNetwork.ConnectUsingSettings();
     }
 
+    // =================================================================
+    // CÁC HÀM PUBLIC DÀNH CHO UI (SẼ DÙNG Ở CÁC TASK SAU)
+    // Hiện tại chúng ta chưa gọi các hàm này, nhưng đã viết sẵn cho Thắng (UI Dev)
+    // =================================================================
+    public void SetPlayerName(string name)
+    {
+        playerName = name;
+    }
+
+    public void CreateRoom(string roomName)
+    {
+        if (!PhotonNetwork.IsConnected) return;
+        PhotonNetwork.NickName = playerName;
+        RoomOptions roomOptions = new RoomOptions() { MaxPlayers = 4 };
+        PhotonNetwork.CreateRoom(roomName, roomOptions);
+    }
+
+    public void JoinRoom(string roomName)
+    {
+        if (!PhotonNetwork.IsConnected) return;
+        PhotonNetwork.NickName = playerName;
+        PhotonNetwork.JoinRoom(roomName);
+    }
+    // =================================================================
+
     // --- Các sự kiện (Callback) của Photon ---
 
     public override void OnConnectedToMaster()
@@ -44,44 +69,48 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         Debug.Log("<color=cyan>[NetworkManager] Đã vào sảnh chờ (Lobby)! Sẵn sàng để Tạo/Vào phòng.</color>");
 
         // =================================================================
-        // KHU VỰC TỰ ĐỘNG TEST - BẠN CÓ THỂ CHỈNH SỬA Ở ĐÂY
+        // KHU VỰC TỰ ĐỘNG TEST
         // =================================================================
-        // Khi vào sảnh, chúng ta sẽ tự động tạo hoặc vào một phòng
+        // 1. Tự động gán một tên ngẫu nhiên cho người chơi để test
+        PhotonNetwork.NickName = "Player_" + Random.Range(1000, 9999);
+        Debug.Log($"[NetworkManager-TEST] Đã gán tên người chơi là: {PhotonNetwork.NickName}");
 
+        // 2. Tự động vào hoặc tạo phòng test
         Debug.Log($"[NetworkManager-TEST] Đang cố gắng vào phòng '{testRoomName}'...");
         PhotonNetwork.JoinOrCreateRoom(testRoomName, new RoomOptions { MaxPlayers = 4 }, TypedLobby.Default);
-
-        // PhotonNetwork.JoinOrCreateRoom() là một hàm rất tiện lợi:
-        // - Nếu phòng `testRoomName` đã tồn tại, nó sẽ cố gắng vào.
-        // - Nếu phòng chưa tồn tại, nó sẽ tự động tạo ra phòng đó.
-        // Điều này giúp bạn dễ dàng test với nhiều người chơi.
         // =================================================================
     }
 
     public override void OnJoinedRoom()
     {
-        Debug.Log($"<color=green>[NetworkManager] Đã vào phòng '{PhotonNetwork.CurrentRoom.Name}' thành công!</color>");
+        Debug.Log($"<color=green>[NetworkManager] Người chơi '{PhotonNetwork.NickName}' đã vào phòng '{PhotonNetwork.CurrentRoom.Name}' thành công!</color>");
         Debug.Log($"[NetworkManager] Số người chơi hiện tại: {PhotonNetwork.CurrentRoom.PlayerCount}");
 
-        // Khi vào phòng, chúng ta sẽ in ra danh sách người chơi
+        // In ra danh sách tất cả người chơi trong phòng
         foreach (Player player in PhotonNetwork.PlayerList)
         {
-            Debug.Log($"[NetworkManager] Người chơi trong phòng: {player.NickName}");
+            Debug.Log($"[NetworkManager] Người chơi trong phòng: {player.NickName} | IsMasterClient: {player.IsMasterClient}");
         }
-
-        // Chúng ta có thể load scene game ở đây để test
-        // if (PhotonNetwork.IsMasterClient)
-        // {
-        //     Debug.Log("[NetworkManager] Tôi là Master Client, đang load scene game...");
-        //     PhotonNetwork.LoadLevel("InGame"); // Thay "InGame" bằng tên scene game của bạn
-        // }
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        // Được gọi khi một người chơi mới vào phòng MÀ BẠN ĐANG Ở TRONG
         Debug.Log($"<color=yellow>[NetworkManager] Người chơi mới '{newPlayer.NickName}' đã vào phòng!</color>");
     }
+
+    // --- CÁC CALLBACK MỚI ĐƯỢC THÊM TRONG TASK NÀY ---
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        // Được gọi khi có người rời phòng
+        Debug.Log($"<color=orange>[NetworkManager] Người chơi '{otherPlayer.NickName}' đã rời phòng.</color>");
+    }
+
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        // Được gọi khi chủ phòng rời đi và một người khác được đôn lên làm chủ phòng mới
+        Debug.Log($"<color=magenta>[NetworkManager] Chủ phòng đã thay đổi! Chủ phòng mới là '{newMasterClient.NickName}'.</color>");
+    }
+    // ---------------------------------------------
 
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
