@@ -292,6 +292,16 @@ PrefabInstance:
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 3659375471047109162}
+    - target: {fileID: 8872122834788242449, guid: 4c24e010c4ac2634690cd6ed473b533d,
+        type: 3}
+      propertyPath: rotationSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8872122834788242449, guid: 4c24e010c4ac2634690cd6ed473b533d,
+        type: 3}
+      propertyPath: sprintSpeedMultiplier
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: -7615748321428708281, guid: 4c24e010c4ac2634690cd6ed473b533d, type: 3}
     m_RemovedGameObjects: []

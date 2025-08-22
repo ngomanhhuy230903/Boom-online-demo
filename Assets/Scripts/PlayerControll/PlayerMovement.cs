@@ -7,7 +7,6 @@ using Photon.Pun;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Component References")]
-    public GameObject playerCamera;
     private AnimationMovement animationMovement;
     private Rigidbody rb;
     private Transform cameraTransform;
@@ -22,7 +21,7 @@ public class PlayerMovement : MonoBehaviour
     private bool isSprinting = false;
     private bool isInteracting = false;
 
-    PhotonView photonView;
+    private PhotonView photonView;
 
     void Awake()
     {
@@ -31,28 +30,11 @@ public class PlayerMovement : MonoBehaviour
         animationMovement = GetComponent<AnimationMovement>();
         playerControls = new PlayerControls();
 
-        if (!photonView.IsMine)
-        {
-            if (playerCamera != null)
-            {
-                playerCamera.GetComponent<Camera>().enabled = false;
-                playerCamera.GetComponent<AudioListener>().enabled = false;
-            }
-            this.enabled = false;
-        }
+        cameraTransform = Camera.main.transform;
     }
 
-    void Start()
+    void OnEnable()
     {
-        if (playerCamera != null)
-        {
-            cameraTransform = playerCamera.transform;
-        }
-        else
-        {
-            Debug.LogError("Player Camera chưa được gán trong Inspector!", this);
-        }
-
         playerControls.PlayerMovement.Enable();
         playerControls.PlayerMovement.Walk.performed += OnWalkPerformed;
         playerControls.PlayerMovement.Walk.canceled += OnWalkCanceled;
@@ -61,19 +43,17 @@ public class PlayerMovement : MonoBehaviour
         playerControls.PlayerMovement.Bomb.performed += OnBombPerformed;
     }
 
-    private void OnDestroy()
+    void OnDisable()
     {
-        if (photonView.IsMine && playerControls != null)
-        {
-            playerControls.PlayerMovement.Walk.performed -= OnWalkPerformed;
-            playerControls.PlayerMovement.Walk.canceled -= OnWalkCanceled;
-            playerControls.PlayerMovement.Sprint.performed -= OnSprintPerformed;
-            playerControls.PlayerMovement.Sprint.canceled -= OnSprintCanceled;
-            playerControls.PlayerMovement.Bomb.performed -= OnBombPerformed;
-            playerControls.PlayerMovement.Disable();
-        }
+        playerControls.PlayerMovement.Walk.performed -= OnWalkPerformed;
+        playerControls.PlayerMovement.Walk.canceled -= OnWalkCanceled;
+        playerControls.PlayerMovement.Sprint.performed -= OnSprintPerformed;
+        playerControls.PlayerMovement.Sprint.canceled -= OnSprintCanceled;
+        playerControls.PlayerMovement.Bomb.performed -= OnBombPerformed;
+        playerControls.PlayerMovement.Disable();
     }
 
+    #region Input Event Handlers
     private void OnWalkPerformed(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
@@ -102,28 +82,35 @@ public class PlayerMovement : MonoBehaviour
             animationMovement.PlayTarget("Bomb", isInteracting);
         }
     }
+    #endregion
 
     void Update()
     {
+        if (!photonView.IsMine) return;
         if (isInteracting) return;
+
+        // Update animation values
         animationMovement.ChangeAnimatorValues(moveInput.x, moveInput.y, isSprinting);
     }
 
     void FixedUpdate()
     {
+        if (!photonView.IsMine) return;
         if (isInteracting) return;
-        if (cameraTransform == null) return;
 
+        // Tính hướng dựa theo camera
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
         cameraForward.y = 0;
         cameraRight.y = 0;
         cameraForward.Normalize();
         cameraRight.Normalize();
+
         Vector3 moveDirection = (cameraForward * moveInput.y + cameraRight * moveInput.x).normalized;
 
         HandleMovement(moveDirection);
 
+        // chỉ xoay khi đi tới (y >= 0), đi lùi thì không xoay mặt
         if (moveInput.y >= 0)
         {
             HandleRotation(moveDirection);
@@ -132,6 +119,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovement(Vector3 moveDirection)
     {
+        if (moveDirection == Vector3.zero) return;
+
         float currentSpeed = isSprinting ? moveSpeed * sprintSpeedMultiplier : moveSpeed;
         rb.MovePosition(rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime);
     }

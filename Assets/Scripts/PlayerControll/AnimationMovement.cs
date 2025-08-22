@@ -1,54 +1,82 @@
-﻿using UnityEngine;
-using Photon.Pun;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class AnimationMovement : MonoBehaviour
 {
-    private Animator animator;
-    private PhotonView photonView;
+    Animator animator;
+    int horizontalValue;
+    int verticalValue;
 
     void Awake()
     {
         animator = GetComponent<Animator>();
-        photonView = GetComponent<PhotonView>();
+        horizontalValue = Animator.StringToHash("Horizontal");
+        verticalValue = Animator.StringToHash("Vertical");
     }
-
-    public void ChangeAnimatorValues(float horizontal, float vertical, bool isSprinting)
+    public void ChangeAnimatorValues(float horizontalMovement, float verticalMovement, bool isSprinting)
     {
-        // Chỉ chủ sở hữu mới có quyền thay đổi animation của chính mình
-        if (!photonView.IsMine)
+        float snappedHorizontalMovement;
+        float snappedVerticalMovement;
+
+        #region Snapped Horizontal
+        if (horizontalMovement > 0 && horizontalMovement < 0.55f)
         {
-            return;
+            snappedHorizontalMovement = 0.5f;
         }
+        else if (horizontalMovement > 0.55f)
+        {
+            snappedHorizontalMovement = 1f;
+        }
+        else if (horizontalMovement < 0 && horizontalMovement > -0.55f)
+        {
+            snappedHorizontalMovement = -0.55f;
+        }
+        else if (horizontalMovement < -0.55f)
+        {
+            snappedHorizontalMovement = -1f;
+        }
+        else
+        {
+            snappedHorizontalMovement = 0;
+        }
+        #endregion
 
-        float snappedHorizontal = SnapValue(horizontal);
-        float snappedVertical = SnapValue(vertical);
-
+        #region Snapped Vertical
+        if (verticalMovement > 0 && verticalMovement < 0.55f)
+        {
+            snappedVerticalMovement = 0.5f;
+        }
+        else if (verticalMovement > 0.55f)
+        {
+            snappedVerticalMovement = 1f;
+        }
+        else if (verticalMovement < 0 && verticalMovement > -0.55f)
+        {
+            snappedVerticalMovement = -0.55f;
+        }
+        else if (verticalMovement < -0.55f)
+        {
+            snappedVerticalMovement = -1f;
+        }
+        else
+        {
+            snappedVerticalMovement = 0;
+        }
+        #endregion
         if (isSprinting)
         {
-            snappedVertical = 2f;
+            snappedHorizontalMovement = horizontalMovement; // Double the horizontal movement when sprinting
+            snappedVerticalMovement = 2f; // Double the vertical movement when sprinting
         }
-
-        animator.SetFloat("Horizontal", snappedHorizontal, 0.1f, Time.deltaTime);
-        animator.SetFloat("Vertical", snappedVertical, 0.1f, Time.deltaTime);
+        animator.SetFloat(horizontalValue, snappedHorizontalMovement, 0.1f, Time.deltaTime);
+        animator.SetFloat(verticalValue, snappedVerticalMovement, 0.1f, Time.deltaTime);
     }
-
-    public void PlayTarget(string targetAnimation, bool isInteracting)
+    public void PlayTarget(string targetAim, bool isInteracting)
     {
-        if (!photonView.IsMine)
-        {
-            return;
-        }
-
         animator.SetBool("isInteracting", isInteracting);
-        animator.CrossFade(targetAnimation, 0.2f);
+        animator.CrossFade(targetAim, 0.2f);
+
     }
 
-    private float SnapValue(float value)
-    {
-        if (value > 0 && value < 0.55f) return 0.5f;
-        if (value > 0.55f) return 1f;
-        if (value < 0 && value > -0.55f) return -0.5f;
-        if (value < -0.55f) return -1f;
-        return 0f;
-    }
 }
