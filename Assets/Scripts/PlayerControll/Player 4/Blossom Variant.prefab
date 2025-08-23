@@ -13,6 +13,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Blossom Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 4238509924709601431, guid: f63c07a5cf11fc24ab3fbe7d2b76943e,
+        type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 4238509924710026423, guid: f63c07a5cf11fc24ab3fbe7d2b76943e,
         type: 3}
       propertyPath: m_LocalPosition.x

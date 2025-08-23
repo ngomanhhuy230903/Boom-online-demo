@@ -13,6 +13,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Dragon Inferno Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 3319832262097768165, guid: 5aa274becdffa9c46b69f1cf98445a50,
+        type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 3319832262098260677, guid: 5aa274becdffa9c46b69f1cf98445a50,
         type: 3}
       propertyPath: m_LocalPosition.x

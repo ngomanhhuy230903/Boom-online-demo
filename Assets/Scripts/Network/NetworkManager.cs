@@ -1,4 +1,4 @@
-﻿using Photon.Pun;
+﻿﻿using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -68,52 +68,47 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         Debug.Log("<color=cyan>[NetworkManager] Đã vào sảnh chờ (Lobby)! Sẵn sàng để Tạo/Vào phòng.</color>");
 
-        //// =================================================================
-        //// KHU VỰC TỰ ĐỘNG TEST
-        //// =================================================================
-        //// 1. Tự động gán một tên ngẫu nhiên cho người chơi để test
-        //PhotonNetwork.NickName = "Player_" + Random.Range(1000, 9999);
-        //Debug.Log($"[NetworkManager-TEST] Đã gán tên người chơi là: {PhotonNetwork.NickName}");
+        // =================================================================
+        // KHU VỰC TỰ ĐỘNG TEST
+        // =================================================================
+        // 1. Tự động gán một tên ngẫu nhiên cho người chơi để test
+        PhotonNetwork.NickName = "Player_" + Random.Range(1000, 9999);
+        Debug.Log($"[NetworkManager-TEST] Đã gán tên người chơi là: {PhotonNetwork.NickName}");
+        // 2. Tự động vào hoặc tạo phòng test
+        Debug.Log($"[NetworkManager-TEST] Đang cố gắng vào phòng '{testRoomName}'...");
+        PhotonNetwork.JoinOrCreateRoom(testRoomName, new RoomOptions { MaxPlayers = 4 }, TypedLobby.Default);
 
-        //// 2. Tự động vào hoặc tạo phòng test
-        //Debug.Log($"[NetworkManager-TEST] Đang cố gắng vào phòng '{testRoomName}'...");
-        //PhotonNetwork.JoinOrCreateRoom(testRoomName, new RoomOptions { MaxPlayers = 4 }, TypedLobby.Default);
-        //// =================================================================
+        // =================================================================
+
     }
-
-    // Trong NetworkManager.cs
-
+    void SpawnPlayer()
+    {
+        Vector3 spawnPosition = new Vector3((PhotonNetwork.LocalPlayer.ActorNumber - 1) * 2.0f, 0, 0);
+        PhotonNetwork.Instantiate("Player", spawnPosition, Quaternion.identity);
+    }
     public override void OnJoinedRoom()
     {
         Debug.Log($"<color=green>[NetworkManager] Người chơi '{PhotonNetwork.NickName}' đã vào phòng '{PhotonNetwork.CurrentRoom.Name}' thành công!</color>");
+        Debug.Log($"[NetworkManager] Số người chơi hiện tại: {PhotonNetwork.CurrentRoom.PlayerCount}");
 
-        // --- GỌI UIMANAGER ĐỂ CẬP NHẬT GIAO DIỆN ---
-        // Dòng này sẽ được gọi ở TẤT CẢ client khi họ vào phòng thành công
-        // Chúng ta sẽ cài đặt UI cho Lobby ở phần 3
-        UIManager.Instance.SetActivePanel("lobby"); // Ẩn menu, hiện lobby
-        UIManager.Instance.UpdateLobbyUI();
-
-        // Chỉ Master Client mới Load Scene
-        //if (PhotonNetwork.IsMasterClient)
-        //{
-        //    PhotonNetwork.LoadLevel("LobbyScene");
-        //}
+        // In ra danh sách tất cả người chơi trong phòng
+        foreach (Player player in PhotonNetwork.PlayerList)
+        {
+            Debug.Log($"[NetworkManager] Người chơi trong phòng: {player.NickName} | IsMasterClient: {player.IsMasterClient}");
+        }
+        SpawnPlayer();
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
         Debug.Log($"<color=yellow>[NetworkManager] Người chơi mới '{newPlayer.NickName}' đã vào phòng!</color>");
-
-        // --- GỌI UIMANAGER ĐỂ CẬP NHẬT LẠI DANH SÁCH NGƯỜI CHƠI ---
-        if (UIManager.Instance != null) UIManager.Instance.UpdateLobbyUI();
     }
 
+    // --- CÁC CALLBACK MỚI ĐƯỢC THÊM TRONG TASK NÀY ---
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
+        // Được gọi khi có người rời phòng
         Debug.Log($"<color=orange>[NetworkManager] Người chơi '{otherPlayer.NickName}' đã rời phòng.</color>");
-
-        // --- GỌI UIMANAGER ĐỂ CẬP NHẬT LẠI DANH SÁCH NGƯỜI CHƠI ---
-        if (UIManager.Instance != null) UIManager.Instance.UpdateLobbyUI();
     }
 
     public override void OnMasterClientSwitched(Player newMasterClient)
@@ -136,23 +131,5 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     public override void OnDisconnected(DisconnectCause cause)
     {
         Debug.LogWarning($"<color=red>[NetworkManager] Mất kết nối tới server: {cause}</color>");
-    }
-    // Trong NetworkManager.cs
-    public override void OnLeftRoom()
-    {
-        Debug.Log("<color=orange>[NetworkManager] Bạn đã rời phòng.</color>");
-        // Yêu cầu UIManager chuyển về giao diện Menu
-        UIManager.Instance.OnLeftRoom();
-        // Tải lại MenuScene để đảm bảo mọi thứ được reset
-        //SceneManager.LoadScene("MenuScene");
-        // Kết nối lại với Master Server và vào lobby
-    if (!PhotonNetwork.IsConnected)
-    {
-        PhotonNetwork.ConnectUsingSettings();
-    }
-    else
-    {
-        PhotonNetwork.JoinLobby();
-    }
     }
 }
