@@ -68,15 +68,15 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         Debug.Log("<color=cyan>[NetworkManager] Đã vào sảnh chờ (Lobby)! Sẵn sàng để Tạo/Vào phòng.</color>");
 
-        // =================================================================
-        // KHU VỰC TỰ ĐỘNG TEST
-        // =================================================================
-        // 1. Tự động gán một tên ngẫu nhiên cho người chơi để test
-        PhotonNetwork.NickName = "Player_" + Random.Range(1000, 9999);
-        Debug.Log($"[NetworkManager-TEST] Đã gán tên người chơi là: {PhotonNetwork.NickName}");
-        // 2. Tự động vào hoặc tạo phòng test
-        Debug.Log($"[NetworkManager-TEST] Đang cố gắng vào phòng '{testRoomName}'...");
-        PhotonNetwork.JoinOrCreateRoom(testRoomName, new RoomOptions { MaxPlayers = 4 }, TypedLobby.Default);
+        // // =================================================================
+        // // KHU VỰC TỰ ĐỘNG TEST
+        // // =================================================================
+        // // 1. Tự động gán một tên ngẫu nhiên cho người chơi để test
+        // PhotonNetwork.NickName = "Player_" + Random.Range(1000, 9999);
+        // Debug.Log($"[NetworkManager-TEST] Đã gán tên người chơi là: {PhotonNetwork.NickName}");
+        // // 2. Tự động vào hoặc tạo phòng test
+        // Debug.Log($"[NetworkManager-TEST] Đang cố gắng vào phòng '{testRoomName}'...");
+        // PhotonNetwork.JoinOrCreateRoom(testRoomName, new RoomOptions { MaxPlayers = 4 }, TypedLobby.Default);
 
         // =================================================================
 
@@ -96,7 +96,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         {
             Debug.Log($"[NetworkManager] Người chơi trong phòng: {player.NickName} | IsMasterClient: {player.IsMasterClient}");
         }
-        SpawnPlayer();
+       // SpawnPlayer();
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
